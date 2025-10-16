@@ -1,0 +1,93 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}{{ profile_user.username }}'s Profile - Blog App{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/profile.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header">
+        <div class="profile-avatar">
+            {% if profile_user.avatar %}
+            <img src="{{ profile_user.avatar.url }}" alt="{{ profile_user.username }}">
+            {% else %}
+            <div class="avatar-placeholder">{{ profile_user.username|first|upper }}</div>
+            {% endif %}
+        </div>
+
+        <div class="profile-info">
+            <h1>{{ profile_user.get_full_name|default:profile_user.username }}</h1>
+            <p class="username">@{{ profile_user.username }}</p>
+
+            {% if profile_user.bio %}
+            <p class="bio">{{ profile_user.bio }}</p>
+            {% endif %}
+
+            <div class="profile-meta">
+                {% if profile_user.location %}
+                <span class="meta-item">📍 {{ profile_user.location }}</span>
+                {% endif %}
+
+                {% if profile_user.website %}
+                <span class="meta-item">
+                    🔗 <a href="{{ profile_user.website }}" target="_blank">{{ profile_user.website }}</a>
+                </span>
+                {% endif %}
+
+                <span class="meta-item">📅 Joined {{ profile_user.created_at|date:"M Y" }}</span>
+            </div>
+
+            <div class="profile-stats">
+                <div class="stat">
+                    <strong>{{ posts_count }}</strong>
+                    <span>Posts</span>
+                </div>
+                <div class="stat">
+                    <strong>{{ comments_count }}</strong>
+                    <span>Comments</span>
+                </div>
+                <div class="stat">
+                    <strong>{{ likes_count }}</strong>
+                    <span>Likes</span>
+                </div>
+            </div>
+
+            {% if user == profile_user %}
+            <a href="{% url 'users:edit_profile' %}" class="btn btn-primary">Edit Profile</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="profile-content">
+        <h2>Posts by {{ profile_user.username }}</h2>
+
+        <div class="posts-grid">
+            {% for post in posts %}
+            <article class="post-card">
+                {% if post.featured_image %}
+                <img src="{{ post.featured_image.url }}" alt="{{ post.title }}">
+                {% else %}
+                <img src="{% static 'images/placeholder.jpg' %}" alt="{{ post.title }}">
+                {% endif %}
+                <div class="post-content">
+                    {% if post.category %}
+                    <span class="category-badge">{{ post.category.name }}</span>
+                    {% endif %}
+                    <h3><a href="{% url 'blog:post_detail' post.slug %}">{{ post.title }}</a></h3>
+                    <p>{{ post.excerpt|truncatewords:15 }}</p>
+                    <div class="post-meta">
+                        <span class="date">{{ post.published_at|date:"M d, Y" }}</span>
+                        <span class="views">{{ post.views_count }} views</span>
+                    </div>
+                </div>
+            </article>
+            {% empty %}
+            <p class="no-posts">No posts yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

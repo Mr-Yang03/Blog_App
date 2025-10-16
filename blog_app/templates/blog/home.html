@@ -1,0 +1,88 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Home - Blog App{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/home.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="hero-content">
+        <h1>Welcome to Our Blog</h1>
+        <p>Discover amazing stories and insights from our community</p>
+    </div>
+</section>
+
+{% if featured_posts %}
+<section class="featured-section">
+    <h2>Featured Posts</h2>
+    <div class="featured-grid">
+        {% for post in featured_posts %}
+        <article class="featured-card">
+            {% if post.featured_image %}
+            <img src="{{ post.featured_image.url }}" alt="{{ post.title }}">
+            {% else %}
+            <img src="{% static 'images/placeholder.jpg' %}" alt="{{ post.title }}">
+            {% endif %}
+            <div class="featured-content">
+                <span class="category-badge">{{ post.category.name }}</span>
+                <h3><a href="{% url 'blog:post_detail' post.slug %}">{{ post.title }}</a></h3>
+                <p>{{ post.excerpt|truncatewords:20 }}</p>
+                <div class="post-meta">
+                    <span class="author">By {{ post.author.username }}</span>
+                    <span class="date">{{ post.published_at|date:"M d, Y" }}</span>
+                    <span class="views">{{ post.views_count }} views</span>
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<section class="recent-section">
+    <h2>Recent Posts</h2>
+    <div class="posts-grid">
+        {% for post in recent_posts %}
+        <article class="post-card">
+            {% if post.featured_image %}
+            <img src="{{ post.featured_image.url }}" alt="{{ post.title }}">
+            {% else %}
+            <img src="{% static 'images/placeholder.jpg' %}" alt="{{ post.title }}">
+            {% endif %}
+            <div class="post-content">
+                {% if post.category %}
+                <span class="category-badge">{{ post.category.name }}</span>
+                {% endif %}
+                <h3><a href="{% url 'blog:post_detail' post.slug %}">{{ post.title }}</a></h3>
+                <p>{{ post.excerpt|truncatewords:15 }}</p>
+                <div class="post-meta">
+                    <span class="author">{{ post.author.username }}</span>
+                    <span class="date">{{ post.published_at|date:"M d, Y" }}</span>
+                </div>
+            </div>
+        </article>
+        {% empty %}
+        <p>No posts available yet.</p>
+        {% endfor %}
+    </div>
+    <div class="view-all">
+        <a href="{% url 'blog:post_list' %}" class="btn btn-primary">View All Posts</a>
+    </div>
+</section>
+
+{% if categories %}
+<section class="categories-section">
+    <h2>Explore Categories</h2>
+    <div class="categories-list">
+        {% for category in categories %}
+        <a href="{% url 'blog:category_posts' category.slug %}" class="category-item">
+            {{ category.name }}
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}

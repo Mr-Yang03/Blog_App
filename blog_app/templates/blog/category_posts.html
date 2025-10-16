@@ -1,0 +1,56 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}{{ category.name }} - Blog App{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/post_list.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="category-header">
+    <h1>{{ category.name }}</h1>
+    {% if category.description %}
+    <p class="category-description">{{ category.description }}</p>
+    {% endif %}
+</div>
+
+<div class="posts-grid">
+    {% for post in page_obj %}
+    <article class="post-card">
+        {% if post.featured_image %}
+        <img src="{{ post.featured_image.url }}" alt="{{ post.title }}">
+        {% else %}
+        <img src="{% static 'images/placeholder.jpg' %}" alt="{{ post.title }}">
+        {% endif %}
+        <div class="post-content">
+            <h2><a href="{% url 'blog:post_detail' post.slug %}">{{ post.title }}</a></h2>
+            <p>{{ post.excerpt|truncatewords:20 }}</p>
+            <div class="post-meta">
+                <span class="author">By {{ post.author.username }}</span>
+                <span class="date">{{ post.published_at|date:"M d, Y" }}</span>
+                <span class="views">{{ post.views_count }} views</span>
+            </div>
+        </div>
+    </article>
+    {% empty %}
+    <p>No posts in this category yet.</p>
+    {% endfor %}
+</div>
+
+{% if page_obj.has_other_pages %}
+<div class="pagination">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}" class="page-link">Previous</a>
+    {% endif %}
+
+    <span class="page-current">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}" class="page-link">Next</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
