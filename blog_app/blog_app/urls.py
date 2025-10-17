@@ -21,8 +21,13 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    
+    # Web views (HTML templates)
     path('', include('blog.urls')),
     path('users/', include('users.urls')),
+    
+    # API endpoints (JSON/REST)
+    path('api/', include('api.urls')),
 ]
 
 # Serve media files in development
