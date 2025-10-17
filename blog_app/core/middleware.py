@@ -26,7 +26,7 @@ class LoginRequiredMiddleware:
             '/static/',
             '/media/',
             '/admin/',  # Keep admin accessible
-            '/api/token/',  # JWT token endpoints
+            '/api/',  # All API endpoints (handled by DRF permissions)
         ]
     
     def __call__(self, request):
