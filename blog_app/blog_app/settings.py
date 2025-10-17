@@ -56,8 +56,10 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'users.middleware.JWTAuthenticationMiddleware',  # JWT support for web views
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'core.middleware.LoginRequiredMiddleware',  # Force login for all pages
 ]
 
 ROOT_URLCONF = 'blog_app.urls'

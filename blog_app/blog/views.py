@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Prefetch
 from django.contrib import messages
 from django.utils import timezone
 from django.utils.text import slugify
@@ -68,8 +68,17 @@ def post_detail(request, slug):
     post.views_count += 1
     post.save(update_fields=['views_count'])
 
-    # Get comments
-    comments = post.comments.filter(parent=None, is_approved=True).order_by('-created_at')
+    # Get comments with replies prefetched
+    # Parent comments: newest to oldest (-created_at)
+    # Child replies: oldest to newest (created_at)
+    replies_prefetch = Prefetch(
+        'replies',
+        queryset=Comment.objects.filter(is_approved=True).order_by('created_at')
+    )
+    comments = post.comments.filter(
+        parent=None, 
+        is_approved=True
+    ).prefetch_related(replies_prefetch).order_by('-created_at')
 
     # Check if user liked the post
     user_liked = False

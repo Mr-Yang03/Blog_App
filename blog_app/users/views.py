@@ -3,6 +3,7 @@ from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
+from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User, UserProfile
 
 # Create your views here.
@@ -53,7 +54,7 @@ def register(request):
 
 
 def user_login(request):
-    """User login view"""
+    """User login view with JWT token generation"""
     if request.user.is_authenticated:
         return redirect('blog:home')
 
@@ -64,10 +65,34 @@ def user_login(request):
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
+            # Login user with session
             login(request, user)
+            
+            # Generate JWT tokens
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+            refresh_token = str(refresh)
+            
             messages.success(request, f'Welcome back, {user.username}!')
             next_url = request.GET.get('next', 'blog:home')
-            return redirect(next_url)
+            
+            # Create response and set JWT tokens in cookies
+            response = redirect(next_url)
+            response.set_cookie(
+                'access_token',
+                access_token,
+                max_age=3600,  # 1 hour
+                httponly=False,  # Allow JavaScript to read it
+                samesite='Lax'
+            )
+            response.set_cookie(
+                'refresh_token',
+                refresh_token,
+                max_age=604800,  # 7 days
+                httponly=True,  # Prevent JavaScript access for security
+                samesite='Lax'
+            )
+            return response
         else:
             messages.error(request, 'Invalid username or password.')
 
@@ -76,10 +101,16 @@ def user_login(request):
 
 @login_required
 def user_logout(request):
-    """User logout view"""
+    """User logout view - clear JWT tokens"""
     logout(request)
     messages.info(request, 'You have been logged out.')
-    return redirect('blog:home')
+    
+    # Create response and delete JWT cookies
+    response = redirect('blog:home')
+    response.delete_cookie('access_token')
+    response.delete_cookie('refresh_token')
+    
+    return response
 
 
 @login_required
