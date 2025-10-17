@@ -25,6 +25,11 @@
             <span class="likes">{{ likes_count }} likes</span>
             <span class="comments-count">{{ comments_count }} comments</span>
         </div>
+        {% if user.is_authenticated and post.author == user %}
+        <div class="author-actions">
+            <a href="{% url 'blog:edit_post' post.slug %}" class="btn-edit-post">Edit Post</a>
+        </div>
+        {% endif %}
     </header>
 
     {% if post.featured_image %}

@@ -19,6 +19,8 @@
                     <li><a href="{% url 'blog:home' %}">Home</a></li>
                     <li><a href="{% url 'blog:post_list' %}">Posts</a></li>
                     {% if user.is_authenticated %}
+                        <li><a href="{% url 'blog:my_posts' %}">My Posts</a></li>
+                        <li><a href="{% url 'blog:create_post' %}" class="btn-create-post">Create Post</a></li>
                         <li><a href="{% url 'users:profile' user.username %}">Profile</a></li>
                         <li><a href="{% url 'users:logout' %}">Logout</a></li>
                     {% else %}

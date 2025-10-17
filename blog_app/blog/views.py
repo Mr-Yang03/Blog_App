@@ -3,6 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.contrib import messages
+from django.utils import timezone
+from django.utils.text import slugify
 from .models import Post, Comment, Like, Category, Tag
 
 # Create your views here.
@@ -159,3 +161,164 @@ def tag_posts(request, slug):
         'page_obj': page_obj,
     }
     return render(request, 'blog/tag_posts.html', context)
+
+
+@login_required
+def create_post(request):
+    """Create a new blog post"""
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        content = request.POST.get('content')
+        excerpt = request.POST.get('excerpt')
+        category_id = request.POST.get('category')
+        tag_ids = request.POST.getlist('tags')
+        status = request.POST.get('status', 'draft')
+        is_featured = request.POST.get('is_featured') == 'on'
+        featured_image = request.FILES.get('featured_image')
+
+        if title and content:
+            # Generate unique slug
+            slug = slugify(title)
+            original_slug = slug
+            counter = 1
+            while Post.objects.filter(slug=slug).exists():
+                slug = f"{original_slug}-{counter}"
+                counter += 1
+
+            # Create post
+            post = Post.objects.create(
+                title=title,
+                slug=slug,
+                author=request.user,
+                content=content,
+                excerpt=excerpt,
+                category_id=category_id if category_id else None,
+                status=status,
+                is_featured=is_featured,
+                featured_image=featured_image,
+                published_at=timezone.now() if status == 'published' else None
+            )
+
+            # Add tags
+            if tag_ids:
+                post.tags.set(tag_ids)
+
+            messages.success(request, 'Post created successfully!')
+            return redirect('blog:post_detail', slug=post.slug)
+        else:
+            messages.error(request, 'Title and content are required.')
+
+    categories = Category.objects.all()
+    tags = Tag.objects.all()
+    context = {
+        'categories': categories,
+        'tags': tags,
+    }
+    return render(request, 'blog/create_post.html', context)
+
+
+@login_required
+def edit_post(request, slug):
+    """Edit an existing blog post"""
+    post = get_object_or_404(Post, slug=slug)
+
+    # Check if user is the author
+    if post.author != request.user:
+        messages.error(request, 'You do not have permission to edit this post.')
+        return redirect('blog:post_detail', slug=post.slug)
+
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        content = request.POST.get('content')
+        excerpt = request.POST.get('excerpt')
+        category_id = request.POST.get('category')
+        tag_ids = request.POST.getlist('tags')
+        status = request.POST.get('status', 'draft')
+        is_featured = request.POST.get('is_featured') == 'on'
+        featured_image = request.FILES.get('featured_image')
+
+        if title and content:
+            # Update slug if title changed
+            if post.title != title:
+                slug = slugify(title)
+                original_slug = slug
+                counter = 1
+                while Post.objects.filter(slug=slug).exclude(id=post.id).exists():
+                    slug = f"{original_slug}-{counter}"
+                    counter += 1
+                post.slug = slug
+
+            post.title = title
+            post.content = content
+            post.excerpt = excerpt
+            post.category_id = category_id if category_id else None
+            post.status = status
+            post.is_featured = is_featured
+
+            # Update published_at when status changes to published
+            if status == 'published' and not post.published_at:
+                post.published_at = timezone.now()
+
+            if featured_image:
+                post.featured_image = featured_image
+
+            post.save()
+
+            # Update tags
+            if tag_ids:
+                post.tags.set(tag_ids)
+            else:
+                post.tags.clear()
+
+            messages.success(request, 'Post updated successfully!')
+            return redirect('blog:post_detail', slug=post.slug)
+        else:
+            messages.error(request, 'Title and content are required.')
+
+    categories = Category.objects.all()
+    tags = Tag.objects.all()
+    context = {
+        'post': post,
+        'categories': categories,
+        'tags': tags,
+    }
+    return render(request, 'blog/edit_post.html', context)
+
+
+@login_required
+def delete_post(request, slug):
+    """Delete a blog post"""
+    post = get_object_or_404(Post, slug=slug)
+
+    # Check if user is the author
+    if post.author != request.user:
+        messages.error(request, 'You do not have permission to delete this post.')
+        return redirect('blog:post_detail', slug=post.slug)
+
+    if request.method == 'POST':
+        post.delete()
+        messages.success(request, 'Post deleted successfully!')
+        return redirect('blog:home')
+
+    return redirect('blog:post_detail', slug=post.slug)
+
+
+@login_required
+def my_posts(request):
+    """View all posts by the logged-in user"""
+    posts = Post.objects.filter(author=request.user).order_by('-created_at')
+
+    # Filter by status
+    status_filter = request.GET.get('status')
+    if status_filter:
+        posts = posts.filter(status=status_filter)
+
+    paginator = Paginator(posts, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'status_filter': status_filter,
+    }
+    return render(request, 'blog/my_posts.html', context)
