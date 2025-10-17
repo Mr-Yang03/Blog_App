@@ -35,16 +35,14 @@ def register(request):
 
         # Create user
         try:
-            with transaction.atomic():
-                user = User.objects.create_user(
-                    username=username,
-                    email=email,
-                    password=password,
-                    first_name=first_name,
-                    last_name=last_name
-                )
-                # Create user profile
-                UserProfile.objects.create(user=user)
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name
+            )
+            # UserProfile sẽ được tự động tạo bởi signal
 
             messages.success(request, 'Account created successfully! Please login.')
             return redirect('users:login')
