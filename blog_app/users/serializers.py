@@ -4,7 +4,7 @@ from .models import User, UserProfile
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    """Serializer cho UserProfile"""
+    """Serializer for UserProfile model"""
 
     class Meta:
         model = UserProfile
@@ -12,7 +12,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Serializer cho User"""
+    """Serializer for User model"""
     profile = UserProfileSerializer(read_only=True)
 
     class Meta:
@@ -24,7 +24,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    """Serializer cho đăng ký user mới"""
+    """Serializer for new user registration"""
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
     password2 = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'}, label='Confirm Password')
 
@@ -33,7 +33,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         fields = ['username', 'email', 'password', 'password2', 'first_name', 'last_name']
 
     def validate(self, attrs):
-        """Validate password match"""
+        """Validate that both passwords match"""
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({"password": "Passwords do not match."})
         return attrs
@@ -51,8 +51,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        """Tạo user mới"""
-        validated_data.pop('password2')  # Xóa password2 vì không cần lưu
+        """Create new user with hashed password"""
+        validated_data.pop('password2')  # Remove password2 as it's not needed for storage
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
@@ -60,21 +60,21 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             first_name=validated_data.get('first_name', ''),
             last_name=validated_data.get('last_name', '')
         )
-        # UserProfile sẽ được tự động tạo bởi signal
+        # UserProfile will be automatically created by signal
         return user
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """
     Custom JWT Token Serializer
-    Thêm thông tin user vào token payload
+    Adds additional user information to the token payload
     """
 
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
 
-        # Thêm custom claims vào token
+        # Add custom claims to token payload
         token['username'] = user.username
         token['email'] = user.email
         token['is_staff'] = user.is_staff
@@ -83,10 +83,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
-        """Thêm thông tin user vào response"""
+        """Add user information to the response"""
         data = super().validate(attrs)
 
-        # Thêm user data vào response
+        # Add user data to response
         data['user'] = {
             'id': self.user.id,
             'username': self.user.username,
@@ -99,19 +99,19 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 class ChangePasswordSerializer(serializers.Serializer):
-    """Serializer để đổi password"""
+    """Serializer for changing user password"""
     old_password = serializers.CharField(required=True, write_only=True, style={'input_type': 'password'})
     new_password = serializers.CharField(required=True, write_only=True, style={'input_type': 'password'})
     new_password2 = serializers.CharField(required=True, write_only=True, style={'input_type': 'password'})
 
     def validate(self, attrs):
-        """Validate passwords"""
+        """Validate that new passwords match"""
         if attrs['new_password'] != attrs['new_password2']:
             raise serializers.ValidationError({"new_password": "New passwords do not match."})
         return attrs
 
     def validate_old_password(self, value):
-        """Validate old password"""
+        """Validate that old password is correct"""
         user = self.context['request'].user
         if not user.check_password(value):
             raise serializers.ValidationError("Old password is incorrect.")
@@ -119,7 +119,7 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
-    """Serializer để update user profile"""
+    """Serializer for updating user profile"""
     profile = UserProfileSerializer(required=False)
 
     class Meta:
@@ -127,7 +127,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         fields = ['first_name', 'last_name', 'bio', 'avatar', 'website', 'location', 'birth_date', 'profile']
 
     def update(self, instance, validated_data):
-        """Update user và profile"""
+        """Update user and profile data"""
         profile_data = validated_data.pop('profile', None)
 
         # Update user fields

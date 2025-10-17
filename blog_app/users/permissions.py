@@ -3,22 +3,22 @@ from rest_framework import permissions
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
     """
-    Custom permission: Chỉ owner mới có thể edit
-    Others chỉ có thể read
+    Custom permission: Only owner can edit
+    Others can only read
     """
 
     def has_object_permission(self, request, view, obj):
-        # Read permissions cho tất cả requests (GET, HEAD, OPTIONS)
+        # Read permissions for all requests (GET, HEAD, OPTIONS)
         if request.method in permissions.SAFE_METHODS:
             return True
 
-        # Write permissions chỉ cho owner
+        # Write permissions for only owner
         return obj == request.user
 
 
 class IsOwner(permissions.BasePermission):
     """
-    Custom permission: Chỉ owner mới có thể truy cập
+    Custom permission: Only owner can access
     """
 
     def has_object_permission(self, request, view, obj):
@@ -27,42 +27,42 @@ class IsOwner(permissions.BasePermission):
 
 class IsAdminOrOwner(permissions.BasePermission):
     """
-    Custom permission: Admin hoặc owner mới có thể truy cập
+    Custom permission: Admin or owner can access
     """
 
     def has_object_permission(self, request, view, obj):
-        # Admin có full quyền
+        # Admin has full access
         if request.user and request.user.is_staff:
             return True
 
-        # Owner có quyền với object của mình
+        # Owners have full access only with their object
         return obj == request.user
 
 
 class IsStaffOrReadOnly(permissions.BasePermission):
     """
-    Custom permission: Staff có thể edit, others chỉ read
+    Custom permission: Staff can edit, others can only read
     """
 
     def has_permission(self, request, view):
-        # Read permissions cho tất cả
+        # Read permissions for all requests
         if request.method in permissions.SAFE_METHODS:
             return True
 
-        # Write permissions chỉ cho staff
+        # Write permissions for only staff
         return request.user and request.user.is_staff
 
 
 class IsVerifiedUser(permissions.BasePermission):
     """
-    Custom permission: Chỉ user đã verify email mới có quyền
+    Custom permission: Only user who was verified email has permission
     """
 
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
 
-        # Kiểm tra xem user có profile và đã verify chưa
+        # Check if user had profile and verified?
         if hasattr(request.user, 'profile'):
             return request.user.profile.email_verified
 
